@@ -14,7 +14,7 @@ flags.DEFINE_integer("epoch", 72, "Epochs to train (Def: 72).")
 flags.DEFINE_integer("batch_size", 20, "Batch size (Def: 20).")
 flags.DEFINE_integer("seq_len", 105, "Max sequences length. "
                                        " Specified at bucketizing (Def: 105).")
-flags.DEFINE_integer("save_every", 10, "Batch frequency to save model and "
+flags.DEFINE_integer("save_every", 2, "Batch frequency to save model and "
                                         "summary (Def: 100).")
 flags.DEFINE_integer("qrnn_size", 640, "Number of qrnn units per layer "
                                        "(Def: 640).")
@@ -23,6 +23,8 @@ flags.DEFINE_integer("qrnn_k", 2, "Width of QRNN filter (Def: 2). ")
 flags.DEFINE_integer("emb_dim", 100, "Embedding dimension (Def: 100). ")
 flags.DEFINE_integer("vocab_size", 10000, "Num words in vocab (Def: 10000). ")
 flags.DEFINE_float("learning_rate", 1., "Beginning learning rate (Def: 1).")
+flags.DEFINE_float("learning_rate_decay", 0.95, "After 6th epoch this "
+                                                "factor is applied (Def: 0.95)")
 flags.DEFINE_float("grad_clip", 10., "Clip norm value (Def: 10).")
 flags.DEFINE_string("save_path", "lm-qrnn_model", "Save path "
                                                   "(Def: lm-qrnn_model).")
@@ -47,13 +49,13 @@ def main(_):
     qrnn_lm = QRNN_lm(args)
     train(qrnn_lm, bloader, args)
 
-def evaluate(lm_model, loader, args, split='valid'):
+def evaluate(sess, lm_model, loader, args, split='valid'):
     """ Evaluate an epoch over valid or test splits """
     val_loss = []
     batches_per_epoch = loader.batches_per_epoch[split]
     for batchX, batchY in loader.next_batch(split):
         fdict = {lm_model.words_in: batchX, lm_model.words_gtruth: batchY}
-        loss = sess.run(lm_model, feed_dict=fdict)
+        loss = sess.run(lm_model.loss, feed_dict=fdict)
         val_loss.append(loss)
     m_val_loss = np.mean(val_loss)
     print("{} split mean loss: {}, perplexity: {}".format(split, m_val_loss,
@@ -76,8 +78,8 @@ def train(lm_model, loader, args):
                                          feed_dict=fdict)
             tr_loss.append(loss)
             b_timings.append(timeit.default_timer() - beg_t)
-            if (batch_i + 1) % args.save_every == 0:
-                writer.add_summary(summary)
+            if batch_i % args.save_every == 0:
+                writer.add_summary(summary, epoch_idx * batches_per_epoch + batch_i)
                 checkpoint_file = os.path.join(save_path, 'model.ckpt')
                 saver.save(sess, checkpoint_file,
                            global_step=epoch_idx * batches_per_epoch + batch_i)
@@ -88,8 +90,6 @@ def train(lm_model, loader, args):
             batch_i += 1
             if (batch_i + 1) >= batches_per_epoch:
                 break
-            # TODO: TMP reset states
-            lm_model.reset_states(sess)
         return np.mean(tr_loss)
     with tf.Session() as sess:
         try:
@@ -99,6 +99,7 @@ def train(lm_model, loader, args):
             # Backward compatibility
             tf.initialize_all_variables().run()
             merged = tf.merge_all_summaries()
+        curr_lr = args.learning_rate
         saver = tf.train.Saver()
         train_writer = tf.train.SummaryWriter(os.path.join(args.save_path,
                                                            'train'),
@@ -106,10 +107,19 @@ def train(lm_model, loader, args):
         for epoch_idx in range(args.epoch):
             epoch_loss = train_epoch(sess, epoch_idx, train_writer,
                                      merged, saver, args.save_path)
-            print('End of epoch {} with avg loss {}'.format(epoch_loss))
+            print('End of epoch {} with avg loss {} and '
+                  'perplexity {}'.format(epoch_idx, 
+                                         epoch_loss,
+                                         np.exp(epoch_loss)))
+            if epoch_idx >= 5:
+                curr_lr = curr_lr * args.learning_rate_decay
+                decay_op = lm_model.lr.assign(curr_lr)
+                sess.run(decay_op)
             # reset states
             lm_model.reset_states(sess)
-            val_loss = evaluate(lm_model, loader, args)
+            val_loss = evaluate(sess, lm_model, loader, args)
+            # reset states after evaluating
+            lm_model.reset_states(sess)
 
 
 

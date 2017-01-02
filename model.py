@@ -34,6 +34,7 @@ class QRNN_lm(object):
 
         self.logits, self.output = self.inference()
         self.loss = self.lm_loss(self.logits, self.words_gtruth)
+        self.loss_summary = scalar_summary('loss', self.loss)
         # set up optimizer
         self.lr = tf.Variable(args.learning_rate, trainable=False)
         self.lr_summary = scalar_summary('lr', self.lr)
@@ -73,8 +74,6 @@ class QRNN_lm(object):
                 histogram_summary('last_state_{}'.format(qrnn_l),
                                   qrnn_.last_state)
                 self.initial_states.append(qrnn_.initial_state)
-                histogram_summary('init_state_{}'.format(qrnn_l),
-                                  qrnn_.initial_state)
                 self.qrnns.append(qrnn_)
 
             qrnn_h_f = tf.reshape(qrnn_h, [-1, self.qrnn_size])
@@ -95,5 +94,5 @@ class QRNN_lm(object):
 
     def reset_states(self, sess):
         for qrnn_idx, qrnn_ in enumerate(self.qrnns):
-            print('Resetting states of qrnn {}'.format(qrnn_idx))
+            # print('Resetting states of qrnn {}'.format(qrnn_idx))
             qrnn_.reset_states(sess)
