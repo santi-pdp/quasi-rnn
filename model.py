@@ -20,11 +20,14 @@ def histogram_summary(name, x):
 
 class QRNN_lm(object):
     """ Implement the Language Model from https://arxiv.org/abs/1611.01576 """
-    def __init__(self, args):
+    def __init__(self, args, infer=False):
         self.batch_size = args.batch_size
+        self.infer = infer
         self.seq_len = args.seq_len
         self.vocab_size = args.vocab_size
         self.emb_dim = args.emb_dim
+        self.zoneout = args.zoneout
+        self.dropout = args.dropout
         self.qrnn_size = args.qrnn_size
         self.qrnn_layers = args.qrnn_layers
         self.words_in = tf.placeholder(tf.int32, [self.batch_size,
@@ -59,6 +62,9 @@ class QRNN_lm(object):
             # print('len of words: ', len(words))
             for word_idx in words:
                 word_embed = tf.nn.embedding_lookup(word_W, word_idx)
+                if not self.infer and self.dropout > 0:
+                    word_embed = tf.nn.dropout(word_embed, (1. - self.dropout),
+                                               name='dout_word_emb')
                 # print('word embed shape: ', word_embed.get_shape().as_list())
                 if embeddings is None:
                     embeddings = tf.squeeze(word_embed, [1])
@@ -68,8 +74,15 @@ class QRNN_lm(object):
             qrnn_h = embeddings
             for qrnn_l in range(self.qrnn_layers):
                 qrnn_ = QRNN_layer(qrnn_h, self.qrnn_size, pool_type='fo',
+                                   zoneout=self.zoneout,
                                    name='QRNN_layer{}'.format(qrnn_l))
                 qrnn_h = qrnn_.h
+                # apply dropout if required
+                if not self.infer and self.dropout > 0:
+                    qrnn_h_f = tf.reshape(qrnn_h, [-1, self.qrnn_size])
+                    qrnn_h_dout = tf.nn.dropout(qrnn_h_f, (1. - self.dropout), 
+                                                name='dout_qrnn{}'.format(qrnn_l))
+                    qrnn_h = tf.reshape(qrnn_h_dout, [self.batch_size, -1, self.qrnn_size])
                 self.last_states.append(qrnn_.last_state)
                 histogram_summary('qrnn_state_{}'.format(qrnn_l),
                                   qrnn_.last_state)
@@ -81,7 +94,6 @@ class QRNN_lm(object):
             logits = fully_connected(qrnn_h_f,
                                      self.vocab_size,
                                      weights_initializer=xavier_initializer(),
-                                     biases_initializer=tf.constant_initializer(0.),
                                      scope='output_softmax')
             output = tf.nn.softmax(logits)
             return logits, output

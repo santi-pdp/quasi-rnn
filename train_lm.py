@@ -20,8 +20,10 @@ flags.DEFINE_integer("qrnn_size", 640, "Number of qrnn units per layer "
                                        "(Def: 640).")
 flags.DEFINE_integer("qrnn_layers", 2, "Number of qrnn layers (Def: 2). ")
 flags.DEFINE_integer("qrnn_k", 2, "Width of QRNN filter (Def: 2). ")
-flags.DEFINE_integer("emb_dim", 100, "Embedding dimension (Def: 100). ")
-flags.DEFINE_integer("vocab_size", 10000, "Num words in vocab (Def: 10000). ")
+flags.DEFINE_integer("emb_dim", 650, "Embedding dimension (Def: 650). ")
+flags.DEFINE_integer("vocab_size", 10001, "Num words in vocab (Def: 10001). ")
+flags.DEFINE_float("zoneout", 0., "Apply zoneout (dropout) to F gate (Def: 0)")
+flags.DEFINE_float("dropout", 0.5, "Apply dropout in hidden layers (Def: 0.5)")
 flags.DEFINE_float("learning_rate", 1., "Beginning learning rate (Def: 1).")
 flags.DEFINE_float("learning_rate_decay", 0.95, "After 6th epoch this "
                                                 "factor is applied (Def: 0.95)")
@@ -31,8 +33,8 @@ flags.DEFINE_string("save_path", "lm-qrnn_model", "Save path "
 flags.DEFINE_string("data_dir", "data/ptb", "Data dir containing train/valid"
                                             "/test.txt files (Def: lm-qrnn_"
                                             "model).")
-flags.DEFINE_boolean("do_train", True, "Flag for training (Def: True).")
-flags.DEFINE_boolean("do_test", True, "Flag for testing (Def: True).")
+flags.DEFINE_boolean("train", True, "Flag for training (Def: True).")
+flags.DEFINE_boolean("test", True, "Flag for testing (Def: True).")
 
 
 FLAGS = flags.FLAGS
@@ -66,7 +68,6 @@ def evaluate(sess, lm_model, loader, args, split='valid'):
         batch_i += 1
         if (batch_i + 1) >= batches_per_epoch:
             break
-
 
     m_val_loss = np.mean(val_loss)
     print("{} split mean loss: {}, perplexity: {}".format(split, m_val_loss,
