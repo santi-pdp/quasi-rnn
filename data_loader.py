@@ -85,9 +85,14 @@ class ptb_batch_loader(object):
         for split in inputs_path.keys():
             # train, valid and test
             with codecs.open(inputs_path[split], 'r', encoding='utf8') as inf:
-                txt = inf.read()
-                txt_words = prog.split(txt)
-                txt_count = Counter(txt_words)
+                #txt = inf.read()
+                txt_count = None
+                for txt in inf:
+                    txt_words = prog.split(txt) + ['+']
+                    if txt_count is None:
+                        txt_count = Counter(txt_words)
+                    else:
+                        txt_count.update(Counter(txt_words))
                 word2counts.update(txt_count)
                 split_counts[split] = np.sum(txt_count.values())
         print('word counts per split: ', json.dumps(split_counts, indent=2))
@@ -108,7 +113,8 @@ class ptb_batch_loader(object):
                 dataset = np.zeros(split_counts[split], dtype=np.int32)
                 widx = 0
                 for line in inf:
-                    words = prog.split(line)
+                    # appending EOS (+)
+                    words = prog.split(line) + ['+']
                     for cword in filter(None, words):
                         try:
                             # set the index of the word into the tensor
