@@ -90,15 +90,20 @@ def train(lm_model, loader, args):
                 break
         return np.mean(tr_loss)
     with tf.Session() as sess:
-        tf.global_variables_initializer().run()
+        try:
+            tf.global_variables_initializer().run()
+            merged = tf.summary.merge_all()
+        except AttributeError:
+            # Backward compatibility 
+            tf.initialize_all_variables().run()
+            merged = tf.merge_all_summaries()
         saver = tf.train.Saver()
-        merged = tf.summary.merge_all()
-        train_writer = tf.summary.FileWriter(os.path.join(args.save_path,
+        train_writer = tf.train.SummaryWriter(os.path.join(args.save_path,
                                                            'train'),
-                                             sess.graph)
+                                              sess.graph)
         for epoch_idx in range(args.epoch):
             epoch_loss = train_epoch(sess, epoch_idx, train_writer,
-                                     merged, saver)
+                                     merged, saver, args.save_path)
             print('End of epoch {} with avg loss {}'.format(epoch_loss))
             val_loss = evaluate(lm_model, loader, args)
 
