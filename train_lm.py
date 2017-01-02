@@ -54,8 +54,13 @@ def evaluate(sess, lm_model, loader, args, split='valid'):
     val_loss = []
     batches_per_epoch = loader.batches_per_epoch[split]
     batch_i = 0
+    # init states to zero
+    states = [qrnn_.initial_state.eval() for qrnn_ in lm_model.qrnns]
     for batchX, batchY in loader.next_batch(split):
         fdict = {lm_model.words_in: batchX, lm_model.words_gtruth: batchY}
+        # feed last states, this way it's stateful between batches
+        for state, init_state in zip(states, lm_model.initial_states):
+            fdict.update({init_state: state})
         loss = sess.run(lm_model.loss, feed_dict=fdict)
         val_loss.append(loss)
         batch_i += 1
@@ -75,13 +80,19 @@ def train(lm_model, loader, args):
         b_timings = []
         batches_per_epoch = loader.batches_per_epoch['train']
         batch_i = 0
+        # init states to zero
+        states = [qrnn_.initial_state.eval() for qrnn_ in lm_model.qrnns]
         for batchX, batchY in loader.next_batch('train'):
             beg_t = timeit.default_timer()
             fdict = {lm_model.words_in: batchX, lm_model.words_gtruth:batchY}
-            loss, _, summary = sess.run([lm_model.loss,
-                                         lm_model.train_op,
-                                         merger],
-                                         feed_dict=fdict)
+            # feed last states, this way it's stateful between batches
+            for state, init_state in zip(states, lm_model.initial_states):
+                fdict.update({init_state: state})
+            loss, states, _, summary = sess.run([lm_model.loss,
+                                                lm_model.last_states,
+                                                lm_model.train_op,
+                                                merger],
+                                                feed_dict=fdict)
             tr_loss.append(loss)
             b_timings.append(timeit.default_timer() - beg_t)
             if batch_i % args.save_every == 0:
@@ -114,18 +125,14 @@ def train(lm_model, loader, args):
             epoch_loss = train_epoch(sess, epoch_idx, train_writer,
                                      merged, saver, args.save_path)
             print('End of epoch {} with avg loss {} and '
-                  'perplexity {}'.format(epoch_idx, 
+                  'perplexity {}'.format(epoch_idx,
                                          epoch_loss,
                                          np.exp(epoch_loss)))
             if epoch_idx >= 5:
                 curr_lr = curr_lr * args.learning_rate_decay
                 decay_op = lm_model.lr.assign(curr_lr)
                 sess.run(decay_op)
-            # reset states
-            lm_model.reset_states(sess)
             val_loss = evaluate(sess, lm_model, loader, args)
-            # reset states after evaluating
-            lm_model.reset_states(sess)
 
 
 

@@ -82,9 +82,6 @@ class QRNN_layer(object):
             self.h = H
             self.last_state = last_C
 
-    def reset_states(self, sess):
-        sess.run(self.initial_state)
-
     def convolution(self, input_, filter_width, out_fmaps, pool_type, zoneout):
         """ Applies 1D convolution along time-dimension (T) assuming input
             tensor of dim (batch_size, T, n) and returns
@@ -110,7 +107,7 @@ class QRNN_layer(object):
                 g_a = tf.nn.conv1d(pinput, Wg, stride=1, padding='VALID')
                 g = tf.sigmoid(g_a)
                 if not self.infer and zoneout > 0 and gate_name == 'f':
-                    print('Applying zoneout if {} to gate F'.format(zoneout))
+                    print('Applying zoneout {} to gate F'.format(zoneout))
                     # appy dropout to F
                     g = 1. - tf.nn.dropout((1. - g), 1. - zoneout)
                 gates.append(g)
