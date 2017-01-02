@@ -11,7 +11,7 @@ A QRNN layer is composed of a convolutional stage (red blocks in the figure) and
 
 The figure below shows that QRNN is a mixture between CNN and LSTM, where we get the best of both worlds: make all activation computations in parallel with convolutions and merge sequentially, with no recursive weight operations.
 
-![qrnn_block.svg](qrnn_block.svg)
+![qrnn_block.svg](qrnn_block.png)
 
 The current implementation contains a language model prepared to work on Pen TreeBank (PTB) dataset.
 
