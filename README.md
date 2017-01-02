@@ -1,11 +1,11 @@
 # Quasi-Recurrent Neural Networks
 
 Tensorflow implementation of [Quasi-Recurrent Neural Networks](https://arxiv.org/abs/1611.01576) (QRNN).
-The original blog post with code reference can be found [here](http://metamind.io/research/new-neural-network-building-block-allows-faster-and-more-accurate-text-understanding/)
+The original blog post with code reference can be found [here](http://metamind.io/research/new-neural-network-building-block-allows-faster-and-more-accurate-text-understanding/).
 
 A QRNN layer is composed of a convolutional stage (red blocks in the figure) and a pooling stage (blue blocks in the figure):
 
-* The convolutional stage can perform the different activations in parallel (i.e. layer activations and gate activations)
+* The convolutional stage can perform the different activations in parallel (i.e. layer activations and gate activations) through time, such that each red sub-block is independent.
 
 * The pooling stage imposes the ordering information across time, and although it is a sequential process (as depicted by the arrow) the heavy computation has already been performed in a single forward pass in the convolutional stage!
 
