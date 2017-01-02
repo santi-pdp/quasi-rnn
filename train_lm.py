@@ -88,13 +88,15 @@ def train(lm_model, loader, args):
             batch_i += 1
             if (batch_i + 1) >= batches_per_epoch:
                 break
+            # TODO: TMP reset states
+            lm_model.reset_states(sess)
         return np.mean(tr_loss)
     with tf.Session() as sess:
         try:
             tf.global_variables_initializer().run()
             merged = tf.summary.merge_all()
         except AttributeError:
-            # Backward compatibility 
+            # Backward compatibility
             tf.initialize_all_variables().run()
             merged = tf.merge_all_summaries()
         saver = tf.train.Saver()
@@ -105,25 +107,11 @@ def train(lm_model, loader, args):
             epoch_loss = train_epoch(sess, epoch_idx, train_writer,
                                      merged, saver, args.save_path)
             print('End of epoch {} with avg loss {}'.format(epoch_loss))
+            # reset states
+            lm_model.reset_states(sess)
             val_loss = evaluate(lm_model, loader, args)
 
 
-"""
-def build_lm(args):
-    # x = tf.Variable(tf.ones([args.batch_size, args.seq_len], dtype=tf.int32))
-    x = np.ones((args.batch_size, args.seq_len), dtype=np.int32)
-    # qrnn_layer = QRNN_layer(x, 8, pool_type='f')
-    # print('h shape: ', qrnn_layer.h.get_shape())
-    # print('last state shape: ', qrnn_layer.last_state.get_shape())
-
-    with tf.Session() as sess:
-        tf.global_variables_initializer().run()
-        logits = sess.run(qrnn_lm.logits, feed_dict={qrnn_lm.words_in: x})
-        print(logits)
-        print('len logits: ', len(logits))
-        print('logits shape: ', logits.shape)
-        pass
-"""
 
 if __name__ == '__main__':
     tf.app.run()

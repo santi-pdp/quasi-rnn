@@ -46,6 +46,10 @@ class QRNN_lm(object):
     def inference(self):
         words_in = self.words_in
         embeddings = None
+        # keep track of Recurrent states to re-initialize them when needed
+        self.initial_states = []
+        self.last_states = []
+        self.qrnns = []
         with tf.variable_scope('QRNN_LM'):
             word_W = tf.get_variable("word_W",
                                      [self.vocab_size,
@@ -60,13 +64,18 @@ class QRNN_lm(object):
                 else:
                     embeddings = tf.concat(1, [embeddings,
                                            tf.squeeze(word_embed, [1])])
-            print('embeddings shape: ', embeddings.get_shape().as_list())
             qrnn_h = embeddings
             for qrnn_l in range(self.qrnn_layers):
                 qrnn_ = QRNN_layer(qrnn_h, self.qrnn_size, pool_type='f',
                                    name='QRNN_layer{}'.format(qrnn_l))
                 qrnn_h = qrnn_.h
-                print('qrnn_h{} shape: {}'.format(qrnn_l, qrnn_h.get_shape().as_list()))
+                self.last_states.append(qrnn_.last_state)
+                histogram_summary('last_state_{}'.format(qrnn_l),
+                                  qrnn_.last_state)
+                self.initial_states.append(qrnn_.initial_state)
+                histogram_summary('init_state_{}'.format(qrnn_l),
+                                  qrnn_.initial_state)
+                self.qrnns.append(qrnn_)
 
             qrnn_h_f = tf.reshape(qrnn_h, [-1, self.qrnn_size])
             logits = fully_connected(qrnn_h_f,
@@ -83,3 +92,8 @@ class QRNN_lm(object):
         loss =  tf.nn.sparse_softmax_cross_entropy_with_logits(logits,
                                                                f_words_gtruth)
         return tf.reduce_mean(loss)
+
+    def reset_states(self, sess):
+        for qrnn_idx, qrnn_ in enumerate(self.qrnns):
+            print('Resetting states of qrnn {}'.format(qrnn_idx))
+            qrnn_.reset_states(sess)
