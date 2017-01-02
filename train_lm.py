@@ -53,10 +53,16 @@ def evaluate(sess, lm_model, loader, args, split='valid'):
     """ Evaluate an epoch over valid or test splits """
     val_loss = []
     batches_per_epoch = loader.batches_per_epoch[split]
+    batch_i = 0
     for batchX, batchY in loader.next_batch(split):
         fdict = {lm_model.words_in: batchX, lm_model.words_gtruth: batchY}
         loss = sess.run(lm_model.loss, feed_dict=fdict)
         val_loss.append(loss)
+        batch_i += 1
+        if (batch_i + 1) >= batches_per_epoch:
+            break
+
+
     m_val_loss = np.mean(val_loss)
     print("{} split mean loss: {}, perplexity: {}".format(split, m_val_loss,
                                                           np.exp(m_val_loss)))
