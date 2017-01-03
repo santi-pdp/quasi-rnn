@@ -38,12 +38,19 @@ class QRNN_lm(object):
         self.logits, self.output = self.inference()
         self.loss = self.lm_loss(self.logits, self.words_gtruth)
         self.loss_summary = scalar_summary('loss', self.loss)
+        self.perp_summary = scalar_summary('perplexity', tf.exp(self.loss))
         # set up optimizer
         self.lr = tf.Variable(args.learning_rate, trainable=False)
         self.lr_summary = scalar_summary('lr', self.lr)
         tvars = tf.trainable_variables()
-        grads, _ = tf.clip_by_global_norm(tf.gradients(self.loss, tvars),
-                                          args.grad_clip)
+        grads = []
+        for grad in tf.gradients(self.loss, tvars):
+            if grad is not None:
+                grads.append(tf.clip_by_norm(grad, args.grad_clip))
+            else:
+                grads.append(grad)
+        #grads, _ = tf.clip_by_global_norm(tf.gradients(self.loss, tvars),
+        #                                  args.grad_clip)
         self.opt = tf.train.GradientDescentOptimizer(self.lr)
         self.train_op = self.opt.apply_gradients(zip(grads, tvars))
 
@@ -99,8 +106,19 @@ class QRNN_lm(object):
             return logits, output
 
     def lm_loss(self, logits, words_gtruth):
-        f_words_gtruth = tf.reshape(words_gtruth,
-                                    [self.batch_size * self.seq_len])
-        loss =  tf.nn.sparse_softmax_cross_entropy_with_logits(logits,
-                                                               f_words_gtruth)
-        return tf.reduce_mean(loss)
+        gtruth_splits = tf.split(1, self.seq_len, words_gtruth)
+        logits_splits = tf.split(1, self.seq_len, tf.reshape(logits,
+                                                             [self.batch_size, 
+                                                              self.seq_len, -1]))
+        #f_words_gtruth = tf.reshape(words_gtruth,
+        #                            [self.batch_size * self.seq_len])
+        loss = 0
+        for idx, (preds, gtruth) in enumerate(zip(logits_splits, gtruth_splits)):
+            preds = tf.squeeze(preds)
+            gtruth = tf.squeeze(gtruth)
+            loss += tf.nn.sparse_softmax_cross_entropy_with_logits(preds,
+                                                                   gtruth)
+        loss = tf.reduce_mean(loss) / self.seq_len
+        #loss =  tf.nn.sparse_softmax_cross_entropy_with_logits(logits,
+        #                                                       f_words_gtruth)
+        return loss

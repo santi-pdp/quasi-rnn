@@ -1,5 +1,12 @@
 import tensorflow as tf
+import numbers
 from tensorflow.contrib.layers import xavier_initializer
+from tensorflow.python.framework import tensor_shape
+from tensorflow.python.framework import tensor_util
+from tensorflow.python.ops import array_ops
+from tensorflow.python.ops import random_ops
+from tensorflow.python.ops import math_ops
+from tensorflow.python.framework import ops
 
 
 def zoneout(x, keep_prob, noise_shape=None, seed=None, name=None):
@@ -27,7 +34,7 @@ def zoneout(x, keep_prob, noise_shape=None, seed=None, name=None):
     Raises:
       ValueError: If `keep_prob` is not in `(0, 1]`.
     """
-    with ops.name_scope(name, "dropout", [x]) as name:
+    with tf.name_scope(name, "dropout", [x]) as name:
         x = ops.convert_to_tensor(x, name="x")
         if isinstance(keep_prob, numbers.Real) and not 0 < keep_prob <= 1:
             raise ValueError("keep_prob must be a scalar tensor or a float in the "
@@ -133,7 +140,7 @@ class QRNN_layer(object):
             self.h = H
             self.last_state = last_C
 
-    def convolution(self, input_, filter_width, out_fmaps, pool_type, zoneout):
+    def convolution(self, input_, filter_width, out_fmaps, pool_type, zoneout_):
         """ Applies 1D convolution along time-dimension (T) assuming input
             tensor of dim (batch_size, T, n) and returns
             (batch_size, T, out_fmaps)
@@ -158,9 +165,9 @@ class QRNN_layer(object):
                 g_a = tf.nn.conv1d(pinput, Wg, stride=1, padding='VALID')
                 g = tf.sigmoid(g_a)
                 if not self.infer and zoneout > 0 and gate_name == 'f':
-                    print('Applying zoneout {} to gate F'.format(zoneout))
+                    print('Applying zoneout {} to gate F'.format(zoneout_))
                     # appy zoneout to F
-                    g = zoneout((1. - g), 1. - zoneout)
+                    g = zoneout((1. - g), 1. - zoneout_)
                     # g = 1. - tf.nn.dropout((1. - g), 1. - zoneout)
                 gates.append(g)
         return z, gates
