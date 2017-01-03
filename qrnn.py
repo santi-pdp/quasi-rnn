@@ -34,7 +34,7 @@ def zoneout(x, keep_prob, noise_shape=None, seed=None, name=None):
     Raises:
       ValueError: If `keep_prob` is not in `(0, 1]`.
     """
-    with tf.name_scope(name, "dropout", [x]) as name:
+    with tf.name_scope(name or "dropout") as name:
         x = ops.convert_to_tensor(x, name="x")
         if isinstance(keep_prob, numbers.Real) and not 0 < keep_prob <= 1:
             raise ValueError("keep_prob must be a scalar tensor or a float in the "
@@ -164,7 +164,7 @@ class QRNN_layer(object):
                                      initializer=xavier_initializer())
                 g_a = tf.nn.conv1d(pinput, Wg, stride=1, padding='VALID')
                 g = tf.sigmoid(g_a)
-                if not self.infer and zoneout > 0 and gate_name == 'f':
+                if not self.infer and zoneout_ > 0 and gate_name == 'f':
                     print('Applying zoneout {} to gate F'.format(zoneout_))
                     # appy zoneout to F
                     g = zoneout((1. - g), 1. - zoneout_)
