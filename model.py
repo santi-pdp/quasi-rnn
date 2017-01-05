@@ -135,6 +135,15 @@ class QRNN_lm(object):
                   'setting <unk>'.format(first_word))
             curr_word[0, 0] = word2idx['<unk>']
 
+        def sample_temperature(preds, temperature=1.0):
+            # helper function to sample an index from a probability array
+            preds = np.asarray(preds).astype('float64')
+            preds = np.log(preds) / temperature
+            exp_preds = np.exp(preds)
+            preds = exp_preds / np.sum(exp_preds)
+            probas = np.random.multinomial(1, preds, 1)
+            return np.argmax(probas)
+
         prev_states = []
         for qrnn_ in self.qrnns:
             prev_states.append(sess.run(qrnn_.initial_state))
@@ -149,7 +158,7 @@ class QRNN_lm(object):
                                                self.logits,
                                                self.last_states],
                                                feed_dict=fdict)
-            curr_word[0, 0] = np.argmax(output)
+            curr_word[0, 0] = sample_temperature(output[0], 0.75)
             out_stream.append(idx2word[curr_word[0, 0]])
             for idx, new_state in enumerate(states):
                 prev_states[idx] = states[idx]
