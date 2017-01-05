@@ -111,7 +111,7 @@ class QRNN_layer(object):
         (cf. https://arxiv.org/abs/1611.01576)
     """
     def __init__(self, out_fmaps, fwidth=2,
-                 activation=tf.tanh, pool_type='fo', zoneout=0.1,
+                 activation=tf.tanh, pool_type='fo', zoneout=0.1, infer=False,
                  name='QRNN'):
         """
         pool_type: can be f, fo, or ifo
@@ -120,6 +120,7 @@ class QRNN_layer(object):
         self.out_fmaps = out_fmaps
         self.activation = activation
         self.name = name
+        self.infer = infer
         self.pool_type = pool_type
         self.fwidth = fwidth
         self.out_fmaps = out_fmaps

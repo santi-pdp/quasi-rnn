@@ -1,7 +1,9 @@
+from __future__ import print_function
 import tensorflow as tf
 from qrnn import QRNN_layer
 from tensorflow.contrib.layers import xavier_initializer
 from tensorflow.contrib.layers import flatten, fully_connected
+import numpy as np
 import os
 
 def scalar_summary(name, x):
@@ -22,8 +24,11 @@ class QRNN_lm(object):
     """ Implement the Language Model from https://arxiv.org/abs/1611.01576 """
     def __init__(self, args, infer=False):
         self.batch_size = args.batch_size
-        self.infer = infer
         self.seq_len = args.seq_len
+        if infer:
+            self.batch_size = 1
+            self.seq_len = 1
+        self.infer = infer
         self.vocab_size = args.vocab_size
         self.emb_dim = args.emb_dim
         self.zoneout = args.zoneout
@@ -82,7 +87,8 @@ class QRNN_lm(object):
             for qrnn_l in range(self.qrnn_layers):
                 qrnn_ = QRNN_layer(self.qrnn_size, pool_type='fo',
                                    zoneout=self.zoneout,
-                                   name='QRNN_layer{}'.format(qrnn_l))
+                                   name='QRNN_layer{}'.format(qrnn_l),
+                                   infer=self.infer)
                 qrnn_h, last_state = qrnn_(qrnn_h)
                 #qrnn_h = qrnn_.h
                 # apply dropout if required
@@ -113,6 +119,43 @@ class QRNN_lm(object):
         loss =  tf.nn.sparse_softmax_cross_entropy_with_logits(logits,
                                                                f_words_gtruth)
         return tf.reduce_mean(loss)
+
+    def sample(self, sess, num_words, vocab, first_word='hello'):
+        word2idx = vocab['word2idx']
+        idx2word = vocab['idx2word']
+        vocab_size = len(word2idx)
+        # make sure it's lowercase
+        first_word = first_word.lower()
+        curr_word = np.zeros((1, 1), dtype=np.int32)
+        try:
+            curr_word[0, 0] = word2idx[first_word]
+            print('First word idx: ', curr_word[0, 0])
+        except KeyError:
+            print('First word {} is not in vocab, '
+                  'setting <unk>'.format(first_word))
+            curr_word[0, 0] = word2idx['<unk>']
+
+        prev_states = []
+        for qrnn_ in self.qrnns:
+            prev_states.append(sess.run(qrnn_.initial_state))
+        out_stream = [first_word]
+        print('---Sampling LM from first word \"{}\"---'.format(first_word))
+        for widx in range(num_words):
+            print(idx2word[curr_word[0, 0]], end=' ')
+            fdict = {self.words_in: curr_word}
+            for state, init_state in zip(prev_states, self.initial_states):
+                fdict.update({init_state: state})
+            output, logits, states = sess.run([self.output,
+                                               self.logits,
+                                               self.last_states],
+                                               feed_dict=fdict)
+            curr_word[0, 0] = np.argmax(output)
+            out_stream.append(idx2word[curr_word[0, 0]])
+            for idx, new_state in enumerate(states):
+                prev_states[idx] = states[idx]
+        print('')
+        return ' '.join(out_stream)
+
 
     def save(self, sess, save_filename, global_step):
         if not hasattr(self, 'saver'):

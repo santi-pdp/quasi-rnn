@@ -4,6 +4,8 @@ from qrnn import QRNN_layer
 import numpy as np
 from model import QRNN_lm
 from data_loader import ptb_batch_loader
+import cPickle as pickle
+import gzip
 import timeit
 import json
 import os
@@ -36,7 +38,6 @@ flags.DEFINE_string("data_dir", "data/ptb", "Data dir containing train/valid"
 flags.DEFINE_boolean("train", True, "Flag for training (Def: True).")
 flags.DEFINE_boolean("test", True, "Flag for testing (Def: True).")
 
-
 FLAGS = flags.FLAGS
 
 def main(_):
@@ -50,6 +51,10 @@ def main(_):
     bloader = ptb_batch_loader(args.data_dir, args.batch_size, args.seq_len)
     qrnn_lm = QRNN_lm(args)
     if args.train:
+        with gzip.open(os.path.join(args.save_path,
+                                    'config.pkl.gz'), 'wb') as gh:
+            pickle.dump(args.__flags, gh)
+        print('Config.pkl.gz saved')
         train(qrnn_lm, bloader, args)
     if args.test:
         test(qrnn_lm, bloader, args)
