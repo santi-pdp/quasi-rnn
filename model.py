@@ -2,7 +2,7 @@ import tensorflow as tf
 from qrnn import QRNN_layer
 from tensorflow.contrib.layers import xavier_initializer
 from tensorflow.contrib.layers import flatten, fully_connected
-
+import os
 
 def scalar_summary(name, x):
     try:
@@ -80,7 +80,7 @@ class QRNN_lm(object):
                 # apply dropout if required
                 if not self.infer and self.dropout > 0:
                     qrnn_h_f = tf.reshape(qrnn_h, [-1, self.qrnn_size])
-                    qrnn_h_dout = tf.nn.dropout(qrnn_h_f, (1. - self.dropout), 
+                    qrnn_h_dout = tf.nn.dropout(qrnn_h_f, (1. - self.dropout),
                                                 name='dout_qrnn{}'.format(qrnn_l))
                     qrnn_h = tf.reshape(qrnn_h_dout, [self.batch_size, -1, self.qrnn_size])
                 self.last_states.append(qrnn_.last_state)
@@ -104,3 +104,21 @@ class QRNN_lm(object):
         loss =  tf.nn.sparse_softmax_cross_entropy_with_logits(logits,
                                                                f_words_gtruth)
         return tf.reduce_mean(loss)
+
+    def save(self, sess, save_filename, global_step):
+        if not hasattr(self, 'saver'):
+            self.saver = tf.train.Saver()
+        print('Saving checkpoint to {}...'.format(save_filename))
+        self.saver.save(sess, save_filename, global_step)
+
+    def load(self, sess, save_path):
+        if not hasattr(self, 'saver'):
+            self.saver = tf.train.Saver()
+        ckpt = tf.train.get_checkpoint_state(save_path)
+        if ckpt and ckpt.model_checkpoint_path:
+            ckpt_name = os.path.basename(ckpt.model_checkpoint_path)
+            print('Loading checkpoint {}...'.format(ckpt_name))
+            self.saver.restore(sess, os.path.join(save_path, ckpt_name))
+            return True
+        else:
+            return False

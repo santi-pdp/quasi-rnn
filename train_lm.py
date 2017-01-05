@@ -20,9 +20,9 @@ flags.DEFINE_integer("qrnn_size", 640, "Number of qrnn units per layer "
                                        "(Def: 640).")
 flags.DEFINE_integer("qrnn_layers", 2, "Number of qrnn layers (Def: 2). ")
 flags.DEFINE_integer("qrnn_k", 2, "Width of QRNN filter (Def: 2). ")
-flags.DEFINE_integer("emb_dim", 650, "Embedding dimension (Def: 650). ")
+flags.DEFINE_integer("emb_dim", 640, "Embedding dimension (Def: 640). ")
 flags.DEFINE_integer("vocab_size", 10001, "Num words in vocab (Def: 10001). ")
-flags.DEFINE_float("zoneout", 0., "Apply zoneout (dropout) to F gate (Def: 0)")
+flags.DEFINE_float("zoneout", 0.1, "Apply zoneout (dropout) to F gate (Def: 0.1)")
 flags.DEFINE_float("dropout", 0.5, "Apply dropout in hidden layers (Def: 0.5)")
 flags.DEFINE_float("learning_rate", 1., "Beginning learning rate (Def: 1).")
 flags.DEFINE_float("learning_rate_decay", 0.95, "After 6th epoch this "
@@ -49,7 +49,10 @@ def main(_):
 
     bloader = ptb_batch_loader(args.data_dir, args.batch_size, args.seq_len)
     qrnn_lm = QRNN_lm(args)
-    train(qrnn_lm, bloader, args)
+    if args.train:
+        train(qrnn_lm, bloader, args)
+    if args.test:
+        test(qrnn_lm, bloader, args)
 
 def evaluate(sess, lm_model, loader, args, split='valid'):
     """ Evaluate an epoch over valid or test splits """
@@ -73,6 +76,14 @@ def evaluate(sess, lm_model, loader, args, split='valid'):
     print("{} split mean loss: {}, perplexity: {}".format(split, m_val_loss,
                                                           np.exp(m_val_loss)))
     return m_val_loss
+
+def test(lm_model, loader, args):
+    # load the model from checkpoint
+    with tf.Session() as sess:
+        if not lm_model.load(sess, args.save_path):
+            raise ValueError('Could not load the saved model!')
+        pass
+
 
 def train(lm_model, loader, args):
     def train_epoch(sess, epoch_idx, writer, merger, saver, save_path):
@@ -99,8 +110,9 @@ def train(lm_model, loader, args):
             if batch_i % args.save_every == 0:
                 writer.add_summary(summary, epoch_idx * batches_per_epoch + batch_i)
                 checkpoint_file = os.path.join(save_path, 'model.ckpt')
-                saver.save(sess, checkpoint_file,
-                           global_step=epoch_idx * batches_per_epoch + batch_i)
+                lm_model.save(sess, checkpoint_file, global_step)
+                #saver.save(sess, checkpoint_file,
+                #           global_step=epoch_idx * batches_per_epoch + batch_i)
                 print("%4d/%4d (epoch %2d) tr_loss: %2.6f "
                       "mtime/batch: %2.6fs" % (batch_i, batches_per_epoch,
                                                epoch_idx, loss,
