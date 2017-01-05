@@ -115,7 +115,7 @@ class QRNN_lm(object):
     def save(self, sess, save_filename, global_step):
         if not hasattr(self, 'saver'):
             self.saver = tf.train.Saver()
-        print('Saving checkpoint to {}...'.format(save_filename))
+        print('Saving checkpoint...')
         self.saver.save(sess, save_filename, global_step)
 
     def load(self, sess, save_path):

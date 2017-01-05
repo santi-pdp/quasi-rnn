@@ -14,7 +14,7 @@ flags.DEFINE_integer("epoch", 72, "Epochs to train (Def: 72).")
 flags.DEFINE_integer("batch_size", 20, "Batch size (Def: 20).")
 flags.DEFINE_integer("seq_len", 105, "Max sequences length. "
                                        " Specified at bucketizing (Def: 105).")
-flags.DEFINE_integer("save_every", 2, "Batch frequency to save model and "
+flags.DEFINE_integer("save_every", 100, "Batch frequency to save model and "
                                         "summary (Def: 100).")
 flags.DEFINE_integer("qrnn_size", 640, "Number of qrnn units per layer "
                                        "(Def: 640).")
@@ -110,6 +110,7 @@ def train(lm_model, loader, args):
             if batch_i % args.save_every == 0:
                 writer.add_summary(summary, epoch_idx * batches_per_epoch + batch_i)
                 checkpoint_file = os.path.join(save_path, 'model.ckpt')
+                global_step = epoch_idx * batches_per_epoch + batch_i
                 lm_model.save(sess, checkpoint_file, global_step)
                 #saver.save(sess, checkpoint_file,
                 #           global_step=epoch_idx * batches_per_epoch + batch_i)
