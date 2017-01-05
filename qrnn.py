@@ -110,8 +110,8 @@ class QRNN_layer(object):
     """ Quasi-Recurrent Neural Network Layer
         (cf. https://arxiv.org/abs/1611.01576)
     """
-    def __init__(self, input_, out_fmaps, fwidth=2,
-                 activation=tf.tanh, pool_type='fo', zoneout=0.1, infer=False,
+    def __init__(self, out_fmaps, fwidth=2,
+                 activation=tf.tanh, pool_type='fo', zoneout=0.1,
                  name='QRNN'):
         """
         pool_type: can be f, fo, or ifo
@@ -120,10 +120,19 @@ class QRNN_layer(object):
         self.out_fmaps = out_fmaps
         self.activation = activation
         self.name = name
-        self.infer = infer
+        self.pool_type = pool_type
+        self.fwidth = fwidth
+        self.out_fmaps = out_fmaps
+        self.zoneout = zoneout
 
-        batch_size = input_.get_shape().as_list()[0]
-        with tf.variable_scope(name):
+    def __call__(self, input_):
+        input_shape = input_.get_shape().as_list()
+        batch_size = input_shape[0]
+        fwidth = self.fwidth
+        out_fmaps = self.out_fmaps
+        pool_type = self.pool_type
+        zoneout = self.zoneout
+        with tf.variable_scope(self.name):
             # gates: list containing gate activations (num of gates depending
             # on pool_type)
             Z, gates = self.convolution(input_, fwidth, out_fmaps, pool_type,
@@ -137,8 +146,7 @@ class QRNN_layer(object):
             # encapsulate the pooling in the iterative dynamic_rnn
             H, last_C = tf.nn.dynamic_rnn(pooling, T,
                                           initial_state=self.initial_state)
-            self.h = H
-            self.last_state = last_C
+            return H, last_C
 
     def convolution(self, input_, filter_width, out_fmaps, pool_type, zoneout_):
         """ Applies 1D convolution along time-dimension (T) assuming input

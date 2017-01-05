@@ -80,21 +80,23 @@ class QRNN_lm(object):
                                            tf.squeeze(word_embed, [1])])
             qrnn_h = embeddings
             for qrnn_l in range(self.qrnn_layers):
-                qrnn_ = QRNN_layer(qrnn_h, self.qrnn_size, pool_type='fo',
+                qrnn_ = QRNN_layer(self.qrnn_size, pool_type='fo',
                                    zoneout=self.zoneout,
                                    name='QRNN_layer{}'.format(qrnn_l))
-                qrnn_h = qrnn_.h
+                qrnn_h, last_state = qrnn_(qrnn_h)
+                #qrnn_h = qrnn_.h
                 # apply dropout if required
                 if not self.infer and self.dropout > 0:
                     qrnn_h_f = tf.reshape(qrnn_h, [-1, self.qrnn_size])
                     qrnn_h_dout = tf.nn.dropout(qrnn_h_f, (1. - self.dropout),
                                                 name='dout_qrnn{}'.format(qrnn_l))
                     qrnn_h = tf.reshape(qrnn_h_dout, [self.batch_size, -1, self.qrnn_size])
-                self.last_states.append(qrnn_.last_state)
+                #self.last_states.append(qrnn_.last_state)
+                self.last_states.append(last_state)
                 histogram_summary('qrnn_state_{}'.format(qrnn_l),
-                                  qrnn_.last_state)
+                                  last_state)
                 scalar_summary('qrnn_avg_state_{}'.format(qrnn_l),
-                               tf.reduce_mean(qrnn_.last_state))
+                               tf.reduce_mean(last_state))
                 self.initial_states.append(qrnn_.initial_state)
                 self.qrnns.append(qrnn_)
             qrnn_h_f = tf.reshape(qrnn_h, [-1, self.qrnn_size])
