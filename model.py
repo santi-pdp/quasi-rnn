@@ -38,12 +38,19 @@ class QRNN_lm(object):
         self.logits, self.output = self.inference()
         self.loss = self.lm_loss(self.logits, self.words_gtruth)
         self.loss_summary = scalar_summary('loss', self.loss)
+        self.perp_summary = scalar_summary('perplexity', tf.exp(self.loss))
         # set up optimizer
         self.lr = tf.Variable(args.learning_rate, trainable=False)
         self.lr_summary = scalar_summary('lr', self.lr)
         tvars = tf.trainable_variables()
-        grads, _ = tf.clip_by_global_norm(tf.gradients(self.loss, tvars),
-                                          args.grad_clip)
+        grads = []
+        for grad in tf.gradients(self.loss, tvars):
+            if grad is not None:
+                grads.append(tf.clip_by_norm(grad, args.grad_clip))
+            else:
+                grads.append(grad)
+        #grads, _ = tf.clip_by_global_norm(tf.gradients(self.loss, tvars),
+        #                                  args.grad_clip)
         self.opt = tf.train.GradientDescentOptimizer(self.lr)
         self.train_op = self.opt.apply_gradients(zip(grads, tvars))
 

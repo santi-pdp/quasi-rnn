@@ -20,7 +20,7 @@ flags.DEFINE_integer("qrnn_size", 640, "Number of qrnn units per layer "
                                        "(Def: 640).")
 flags.DEFINE_integer("qrnn_layers", 2, "Number of qrnn layers (Def: 2). ")
 flags.DEFINE_integer("qrnn_k", 2, "Width of QRNN filter (Def: 2). ")
-flags.DEFINE_integer("emb_dim", 640, "Embedding dimension (Def: 640). ")
+flags.DEFINE_integer("emb_dim", 640, "Embedding dimension (Def: 650). ")
 flags.DEFINE_integer("vocab_size", 10001, "Num words in vocab (Def: 10001). ")
 flags.DEFINE_float("zoneout", 0.1, "Apply zoneout (dropout) to F gate (Def: 0.1)")
 flags.DEFINE_float("dropout", 0.5, "Apply dropout in hidden layers (Def: 0.5)")
@@ -121,7 +121,10 @@ def train(lm_model, loader, args):
             if (batch_i + 1) >= batches_per_epoch:
                 break
         return np.mean(tr_loss)
-    with tf.Session() as sess:
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth=True
+    config.allow_soft_placement=True
+    with tf.Session(config=config) as sess:
         try:
             tf.global_variables_initializer().run()
             merged = tf.summary.merge_all()
