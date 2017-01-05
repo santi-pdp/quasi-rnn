@@ -15,11 +15,13 @@ The figure below shows that QRNN is a mixture between CNN and LSTM, where we get
 
 The current implementation contains a language model prepared to work on Pen TreeBank (PTB) dataset.
 
-To execute the training experiment:
+To execute the PTB language model experiment:
 
 `python train_lm.py`
 
-The default parameters are set to achieve those results of the paper for the architecture w/ zoneout of `p = 0.1`. However, there are plenty of options available :)
+The default parameters are set as those in the paper for the architecture w/ zoneout of `p = 0.1`. However, there are plenty of options available :)
+
+NOTE: still have to achieve the results shown in the original paper.
 
 ```
 usage: train_lm.py [-h] [--unrolled_lstm [UNROLLED_LSTM]] [--nounrolled_lstm]
