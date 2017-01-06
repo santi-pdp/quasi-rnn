@@ -147,6 +147,7 @@ class QRNN_layer(object):
             # encapsulate the pooling in the iterative dynamic_rnn
             H, last_C = tf.nn.dynamic_rnn(pooling, T,
                                           initial_state=self.initial_state)
+            self.Z = Z
             return H, last_C
 
     def convolution(self, input_, filter_width, out_fmaps, pool_type, zoneout_):

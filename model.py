@@ -144,7 +144,7 @@ class QRNN_lm(object):
             preds = exp_preds / np.sum(exp_preds)
             probas = np.random.multinomial(1, preds, 1)
             return np.argmax(probas)
-
+        qrnn_activations = [[], []]
         prev_states = []
         for qrnn_ in self.qrnns:
             prev_states.append(sess.run(qrnn_.initial_state))
@@ -155,16 +155,20 @@ class QRNN_lm(object):
             fdict = {self.words_in: curr_word}
             for state, init_state in zip(prev_states, self.initial_states):
                 fdict.update({init_state: state})
-            output, logits, states = sess.run([self.output,
-                                               self.logits,
-                                               self.last_states],
-                                               feed_dict=fdict)
+            output, logits, states, Z1, Z2 = sess.run([self.output,
+                                                       self.logits,
+                                                       self.qrnns[0].Z,
+                                                       self.qrnns[1].Z,
+                                                       self.last_states],
+                                                       feed_dict=fdict)
+            qrnn_activations[0].append(Z1[0][0])
+            qrnn_activations[1].append(Z2[0][0])
             curr_word[0, 0] = sample_temperature(output[0], 0.75)
             out_stream.append(idx2word[curr_word[0, 0]])
             for idx, new_state in enumerate(states):
                 prev_states[idx] = states[idx]
         print('')
-        return ' '.join(out_stream)
+        return ' '.join(out_stream), qrnn_activations
 
 
     def save(self, sess, save_filename, global_step):
