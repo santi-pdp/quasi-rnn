@@ -83,6 +83,7 @@ def evaluate(sess, lm_model, loader, args, split='valid'):
     return m_val_loss
 
 def test(lm_model, loader, args):
+    # TODO: finish this eval code, although sampling already works
     # load the model from checkpoint
     with tf.Session() as sess:
         if not lm_model.load(sess, args.save_path):
