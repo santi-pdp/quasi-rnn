@@ -163,14 +163,14 @@ class QRNN_layer(object):
         pinput = tf.pad(input_, [[0, 0], [filter_width - 1, 0], [0, 0]])
         with tf.variable_scope('convolutions'):
             Wz = tf.get_variable('Wz', [filter_width, in_fmaps, out_fmaps],
-                                 initializer=xavier_initializer())
+                                 initializer=tf.random_uniform_initializer(minval=-.05, maxval=.05))
             z_a = tf.nn.conv1d(pinput, Wz, stride=1, padding='VALID')
             z = self.activation(z_a)
             # compute gates convolutions
             for gate_name in pool_type:
                 Wg = tf.get_variable('W{}'.format(gate_name),
                                      [filter_width, in_fmaps, out_fmaps],
-                                     initializer=xavier_initializer())
+                                     initializer=tf.random_uniform_initializer(minval=-.05, maxval=.05))
                 g_a = tf.nn.conv1d(pinput, Wg, stride=1, padding='VALID')
                 g = tf.sigmoid(g_a)
                 if not self.infer and zoneout_ > 0 and gate_name == 'f':

@@ -69,7 +69,8 @@ class QRNN_lm(object):
         with tf.variable_scope('QRNN_LM'):
             word_W = tf.get_variable("word_W",
                                      [self.vocab_size,
-                                      self.emb_dim])
+                                      self.emb_dim],
+                                      initializer=tf.random_uniform_initializer(minval=-.05, maxval=.05))
             words = tf.split(1, self.seq_len, tf.expand_dims(words_in, -1))
             # print('len of words: ', len(words))
             for word_idx in words:
@@ -108,7 +109,7 @@ class QRNN_lm(object):
             qrnn_h_f = tf.reshape(qrnn_h, [-1, self.qrnn_size])
             logits = fully_connected(qrnn_h_f,
                                      self.vocab_size,
-                                     weights_initializer=xavier_initializer(),
+                                     weights_initializer=tf.random_uniform_initializer(minval=-.05, maxval=.05),
                                      scope='output_softmax')
             output = tf.nn.softmax(logits)
             return logits, output
