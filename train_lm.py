@@ -49,14 +49,15 @@ def main(_):
         os.makedirs(args.save_path)
 
     bloader = ptb_batch_loader(args.data_dir, args.batch_size, args.seq_len)
-    qrnn_lm = QRNN_lm(args)
     if args.train:
+        qrnn_lm = QRNN_lm(args)
         with gzip.open(os.path.join(args.save_path,
                                     'config.pkl.gz'), 'wb') as gh:
             pickle.dump(args.__flags, gh)
         print('Config.pkl.gz saved')
         train(qrnn_lm, bloader, args)
     if args.test:
+        qrnn_lm = QRNN_lm(args, test=True)
         test(qrnn_lm, bloader, args)
 
 def evaluate(sess, lm_model, loader, args, split='valid'):
@@ -88,7 +89,7 @@ def test(lm_model, loader, args):
     with tf.Session() as sess:
         if not lm_model.load(sess, args.save_path):
             raise ValueError('Could not load the saved model!')
-        pass
+        val_loss = evaluate(sess, lm_model, loader, args, split='valid')
 
 
 def train(lm_model, loader, args):

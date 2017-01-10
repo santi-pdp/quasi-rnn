@@ -22,7 +22,7 @@ def histogram_summary(name, x):
 
 class QRNN_lm(object):
     """ Implement the Language Model from https://arxiv.org/abs/1611.01576 """
-    def __init__(self, args, infer=False):
+    def __init__(self, args, infer=False, test=False):
         self.batch_size = args.batch_size
         self.seq_len = args.seq_len
         if infer:
@@ -33,6 +33,9 @@ class QRNN_lm(object):
         self.emb_dim = args.emb_dim
         self.zoneout = args.zoneout
         self.dropout = args.dropout
+        if test:
+            self.zoneout = self.dropout = 0
+        self.test = test
         self.qrnn_size = args.qrnn_size
         self.qrnn_layers = args.qrnn_layers
         self.words_in = tf.placeholder(tf.int32, [self.batch_size,
@@ -75,7 +78,7 @@ class QRNN_lm(object):
             # print('len of words: ', len(words))
             for word_idx in words:
                 word_embed = tf.nn.embedding_lookup(word_W, word_idx)
-                if not self.infer and self.dropout > 0:
+                if (not self.test or not self.infer) and self.dropout > 0:
                     word_embed = tf.nn.dropout(word_embed, (1. - self.dropout),
                                                name='dout_word_emb')
                 # print('word embed shape: ', word_embed.get_shape().as_list())
@@ -93,7 +96,7 @@ class QRNN_lm(object):
                 qrnn_h, last_state = qrnn_(qrnn_h)
                 #qrnn_h = qrnn_.h
                 # apply dropout if required
-                if not self.infer and self.dropout > 0:
+                if (not self.test or not self.infer) and self.dropout > 0:
                     qrnn_h_f = tf.reshape(qrnn_h, [-1, self.qrnn_size])
                     qrnn_h_dout = tf.nn.dropout(qrnn_h_f, (1. - self.dropout),
                                                 name='dout_qrnn{}'.format(qrnn_l))
