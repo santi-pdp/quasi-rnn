@@ -151,7 +151,7 @@ def train(lm_model, loader, args):
                   'perplexity {}'.format(epoch_idx,
                                          epoch_loss,
                                          np.exp(epoch_loss)))
-            if epoch_idx >= 5:
+            if epoch_idx > 5:
                 curr_lr = curr_lr * args.learning_rate_decay
                 decay_op = lm_model.lr.assign(curr_lr)
                 sess.run(decay_op)
