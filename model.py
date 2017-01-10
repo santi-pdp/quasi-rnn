@@ -109,6 +109,7 @@ class QRNN_lm(object):
             qrnn_h_f = tf.reshape(qrnn_h, [-1, self.qrnn_size])
             logits = fully_connected(qrnn_h_f,
                                      self.vocab_size,
+                                     activation_fn=None,
                                      weights_initializer=tf.random_uniform_initializer(minval=-.05, maxval=.05),
                                      scope='output_softmax')
             output = tf.nn.softmax(logits)
