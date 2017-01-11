@@ -1,4 +1,4 @@
-# Quasi-Recurrent Neural Networks
+# QRNN
 
 Tensorflow implementation of [Quasi-Recurrent Neural Networks](https://arxiv.org/abs/1611.01576) (QRNN). The QRNN layer is implemented in the qrnn.py file. 
 The original blog post with code reference can be found [here](http://metamind.io/research/new-neural-network-building-block-allows-faster-and-more-accurate-text-understanding/).

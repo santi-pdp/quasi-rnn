@@ -22,7 +22,7 @@ flags.DEFINE_integer("qrnn_size", 640, "Number of qrnn units per layer "
                                        "(Def: 640).")
 flags.DEFINE_integer("qrnn_layers", 2, "Number of qrnn layers (Def: 2). ")
 flags.DEFINE_integer("qrnn_k", 2, "Width of QRNN filter (Def: 2). ")
-flags.DEFINE_integer("emb_dim", 640, "Embedding dimension (Def: 650). ")
+flags.DEFINE_integer("emb_dim", 640, "Embedding dimension (Def: 640). ")
 flags.DEFINE_integer("vocab_size", 10001, "Num words in vocab (Def: 10001). ")
 flags.DEFINE_float("zoneout", 0.1, "Apply zoneout (dropout) to F gate (Def: 0.1)")
 flags.DEFINE_float("dropout", 0.5, "Apply dropout in hidden layers (Def: 0.5)")
@@ -84,12 +84,10 @@ def evaluate(sess, lm_model, loader, args, split='valid'):
     return m_val_loss
 
 def test(lm_model, loader, args):
-    # TODO: finish this eval code, although sampling already works
-    # load the model from checkpoint
     with tf.Session() as sess:
         if not lm_model.load(sess, args.save_path):
             raise ValueError('Could not load the saved model!')
-        val_loss = evaluate(sess, lm_model, loader, args, split='valid')
+        test_loss = evaluate(sess, lm_model, loader, args, split='valid')
 
 
 def train(lm_model, loader, args):
