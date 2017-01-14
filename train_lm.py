@@ -57,6 +57,7 @@ def main(_):
         print('Config.pkl.gz saved')
         train(qrnn_lm, bloader, args)
     if args.test:
+        tf.reset_default_graph()
         qrnn_lm = QRNN_lm(args, test=True)
         test(qrnn_lm, bloader, args)
 
