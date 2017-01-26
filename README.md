@@ -39,7 +39,12 @@ A zoneout factor of `0.1` was applied without dropout between hidden layers nor 
 
 ![qrnn_lrdecay](assets/qrnn_lrdecay.png)
 
-*NOTE:* currently working to replicate the LM results, not finished yet!
+## TODO
+
+* Work in the sentiment analysis task too
+* Implement a wrapper to stack multiple QRNNs
+* Set up the possibility of dense connections within the stack
+* Implement a seq2seq wrapper
 
 ##  Author
 
