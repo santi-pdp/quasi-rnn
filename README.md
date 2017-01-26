@@ -22,7 +22,10 @@ To execute the PTB language model experiment w/ train and test stages altogether
 To re-make the data tensors for any corpus, remove the `vocab.pkl.gz` file generated
 within the corpus data dir. That will re-set the vocab and dataset generation.
 
-So far could not achieve the same results as in original paper replicating the LM task with PTB.
+The following training is done a bit differently than in original paper for PTB task:
+A zoneout factor of `0.1` was applied without dropout between hidden layers nor L2 reg.
+
+`python train_lm.py --zoneout 0.1 --dropout 0`
 
 #### Loss
 
