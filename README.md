@@ -27,11 +27,11 @@ A zoneout factor of `0.1` was applied without dropout between hidden layers nor 
 
 `python train_lm.py --zoneout 0.1 --dropout 0`
 
-#### Loss
+#### Training Loss
 
 ![qrnn_loss](assets/qrnn_loss.png)
 
-#### Perplexity
+#### Training Perplexity
 
 ![qrnn_pplexity](assets/qrnn_pplexity.png)
 
