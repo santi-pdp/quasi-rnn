@@ -123,7 +123,8 @@ class QRNN_lm(object):
                                     [self.batch_size * self.seq_len])
         loss =  tf.nn.sparse_softmax_cross_entropy_with_logits(logits,
                                                                f_words_gtruth)
-        return tf.reduce_mean(loss)
+        loss = tf.reduce_sum(tf.reshape(loss, [self.batch_size, -1]), 1)
+        return tf.reduce_mean(loss)/self.seq_len
 
     def sample(self, sess, num_words, vocab, first_word='hello'):
         word2idx = vocab['word2idx']
