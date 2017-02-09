@@ -112,10 +112,12 @@ class QRNN_layer(object):
     """
     def __init__(self, out_fmaps, fwidth=2,
                  activation=tf.tanh, pool_type='fo', zoneout=0.1, infer=False,
+                 bias_init_val=None,
                  name='QRNN'):
         """
         pool_type: can be f, fo, or ifo
         zoneout: > 0 means apply zoneout with p = 1 - zoneout
+        bias_init_val: by default there is no bias.
         """
         self.out_fmaps = out_fmaps
         self.activation = activation
@@ -125,6 +127,7 @@ class QRNN_layer(object):
         self.fwidth = fwidth
         self.out_fmaps = out_fmaps
         self.zoneout = zoneout
+        self.bias_init_val = bias_init_val
 
     def __call__(self, input_):
         input_shape = input_.get_shape().as_list()
@@ -165,18 +168,23 @@ class QRNN_layer(object):
         with tf.variable_scope('convolutions'):
             Wz = tf.get_variable('Wz', [filter_width, in_fmaps, out_fmaps],
                                  initializer=tf.random_uniform_initializer(minval=-.05, maxval=.05))
-            bz = tf.get_variable('bz', [out_fmaps],
-                                 initializer=tf.constant_initializer(0.))
-            z_a = tf.nn.conv1d(pinput, Wz, stride=1, padding='VALID') + bz
+            z_a = tf.nn.conv1d(pinput, Wz, stride=1, padding='VALID')
+            if self.bias_init_val is not None:
+                bz = tf.get_variable('bz', [out_fmaps],
+                                     initializer=tf.constant_initializer(0.))
+                z_a += bz
+
             z = self.activation(z_a)
             # compute gates convolutions
             for gate_name in pool_type:
                 Wg = tf.get_variable('W{}'.format(gate_name),
                                      [filter_width, in_fmaps, out_fmaps],
                                      initializer=tf.random_uniform_initializer(minval=-.05, maxval=.05))
-                bg = tf.get_variable('b{}'.format(gate_name), [out_fmaps],
-                                     initializer=tf.constant_initializer(0.))
-                g_a = tf.nn.conv1d(pinput, Wg, stride=1, padding='VALID') + bg
+                g_a = tf.nn.conv1d(pinput, Wg, stride=1, padding='VALID')
+                if self.bias_init_val is not None:
+                    bg = tf.get_variable('b{}'.format(gate_name), [out_fmaps],
+                                         initializer=tf.constant_initializer(0.))
+                    g_a += bg
                 g = tf.sigmoid(g_a)
                 if not self.infer and zoneout_ > 0 and gate_name == 'f':
                     print('Applying zoneout {} to gate F'.format(zoneout_))
